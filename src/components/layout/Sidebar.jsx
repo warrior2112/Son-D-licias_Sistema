@@ -16,7 +16,7 @@ import {
   MapPin
 } from 'lucide-react';
 
-const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, currentUser }) => {
+const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, currentUser, isMobile, isOpen, onClose }) => {
   const modules = [
     { 
       key: 'dashboard', 
@@ -89,29 +89,54 @@ const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, c
     return currentUser?.permissions?.[module.requiresPermission] || false;
   });
 
+  const handleModuleClick = (moduleKey) => {
+    setActiveModule(moduleKey);
+    // En móvil, cerrar el sidebar después de seleccionar
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <aside className={`bg-white shadow-lg transition-all duration-300 flex-1 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'}`}>
-        {/* Toggle button */}
-        <div className="p-4 border-b border-gray-200">
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-5 w-5 text-gray-600" />
-            ) : (
-              <ChevronLeft className="h-5 w-5 text-gray-600" />
-            )}
-          </button>
+      <aside className={`bg-white shadow-lg transition-all duration-300 flex-1 flex flex-col ${
+        isMobile 
+          ? 'w-full h-full' 
+          : isCollapsed ? 'w-16' : 'w-64'
+      }`}>
+        {/* Header del sidebar */}
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          {/* En móvil: título, en desktop: toggle button */}
+          {isMobile ? (
+            <div className="flex items-center justify-between w-full">
+              <h2 className="text-lg font-semibold text-gray-800">Menú</h2>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors touch-target"
+              >
+                <ChevronLeft className="h-5 w-5 text-gray-600" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-5 w-5 text-gray-600" />
+              ) : (
+                <ChevronLeft className="h-5 w-5 text-gray-600" />
+              )}
+            </button>
+          )}
         </div>
 
-        {/* User info (when not collapsed) */}
-        {!isCollapsed && (
+        {/* User info - Siempre visible en mobile, condicional en desktop */}
+        {(isMobile || !isCollapsed) && (
           <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-gray-50">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
                   {currentUser?.name?.charAt(0)?.toUpperCase()}
                 </span>
               </div>
@@ -140,22 +165,22 @@ const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, c
               return (
                 <li key={module.key}>
                   <button
-                    onClick={() => setActiveModule(module.key)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    onClick={() => handleModuleClick(module.key)}
+                    className={`w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 touch-target ${
                       isActive
                         ? 'bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 border-r-4 border-indigo-500 shadow-md'
                         : 'text-gray-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50 hover:text-slate-700'
                     }`}
-                    title={isCollapsed ? module.name : ''}
+                    title={isCollapsed && !isMobile ? module.name : ''}
                   >
-                    <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-indigo-600'}`} />
+                    <Icon className={`h-6 w-6 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-indigo-600'}`} />
                     
-                    {!isCollapsed && (
+                    {(isMobile || !isCollapsed) && (
                       <div className="flex-1 min-w-0">
-                        <span className="font-medium block truncate">
+                        <span className="font-medium block truncate text-base">
                           {module.name}
                         </span>
-                        <span className="text-xs text-gray-500 block truncate">
+                        <span className="text-sm text-gray-500 block truncate">
                           {module.description}
                         </span>
                       </div>
@@ -168,11 +193,14 @@ const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, c
         </nav>
 
         {/* Footer del sidebar - siempre al fondo */}
-        {!isCollapsed && (
+        {(isMobile || !isCollapsed) && (
           <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-slate-50 to-gray-50 mt-auto">
             <div className="text-center">
-              <p className="text-xs text-gray-600 mb-1">Son D'licias v1.0</p>
-              <p className="text-xs text-indigo-600 font-medium">Sistema de Gestión</p>
+              <p className="text-sm text-gray-600 mb-1">Son D'licias v1.0</p>
+              <p className="text-sm text-indigo-600 font-medium">Sistema de Gestión</p>
+              {isMobile && (
+                <p className="text-xs text-gray-500 mt-2">Desliza o toca fuera para cerrar</p>
+              )}
             </div>
           </div>
         )}

@@ -228,43 +228,64 @@ const PointOfSale = ({ onCreateOrder, currentUser }) => {
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Punto de Venta</h2>
-          <p className="text-gray-600">Selecciona platos del menú y procesa órdenes</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Punto de Venta</h2>
+          <p className="text-gray-600 text-sm sm:text-base">Selecciona platos del menú y procesa órdenes</p>
         </div>
-        <Button
-          onClick={() => setShowOrderModal(true)}
-          variant="primary"
-          icon={ShoppingCart}
-          className="relative"
-        >
-          Ver Orden ({currentOrder.length})
-          {currentOrder.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {currentOrder.reduce((sum, item) => sum + item.quantity, 0)}
-            </span>
-          )}
-        </Button>
+        
+        {/* Floating Cart Button for mobile */}
+        <div className="fixed bottom-4 right-4 z-40 lg:hidden">
+          <Button
+            onClick={() => setShowOrderModal(true)}
+            variant="primary"
+            className="relative w-14 h-14 rounded-full p-0 shadow-lg"
+          >
+            <ShoppingCart className="h-6 w-6" />
+            {currentOrder.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+                {currentOrder.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </Button>
+        </div>
+
+        {/* Desktop Cart Button */}
+        <div className="hidden lg:block">
+          <Button
+            onClick={() => setShowOrderModal(true)}
+            variant="primary"
+            icon={ShoppingCart}
+            className="relative"
+          >
+            Ver Orden ({currentOrder.length})
+            {currentOrder.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {currentOrder.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
         {/* Menu Area */}
         <div className="lg:col-span-3">
           {/* Filters */}
-          <div className="mb-6 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
+          <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
                 <Input
                   placeholder="Buscar platos del menú..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   icon={Search}
+                  size="md"
                 />
               </div>
-              <div className="md:w-64">
+              <div className="sm:w-64">
                 <Select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
@@ -285,7 +306,7 @@ const PointOfSale = ({ onCreateOrder, currentUser }) => {
                   <ChefHat className="h-5 w-5 text-blue-600 mr-2" />
                   {DISH_CATEGORY_LABELS[categoryKey] || categoryKey.replace('-', ' ')}
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {categoryDishes.map(dish => (
                     <DishCard
                       key={dish.id}

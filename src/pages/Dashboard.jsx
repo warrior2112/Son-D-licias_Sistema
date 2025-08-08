@@ -54,80 +54,81 @@ const Dashboard = ({ orders = [], inventory = [], onNavigate }) => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard - Son D'licias</h1>
-        <p className="text-gray-600">Resumen de actividades del día</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Dashboard - Son D'licias</h1>
+        <p className="text-gray-600 text-sm sm:text-base">Resumen de actividades del día</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <Card className="bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-emerald-100 text-sm font-medium">Ventas del Día</p>
-                <p className="text-2xl font-bold">{CURRENCY} {dailySales.toFixed(2)}</p>
+                <p className="text-emerald-100 text-xs sm:text-sm font-medium">Ventas del Día</p>
+                <p className="text-xl sm:text-2xl font-bold">{CURRENCY} {dailySales.toFixed(2)}</p>
                 <p className="text-emerald-200 text-xs mt-1">{stats.completedOrders} órdenes completadas</p>
               </div>
-              <DollarSign className="h-8 w-8 text-emerald-200" />
+              <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-200" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">Órdenes Activas</p>
-                <p className="text-2xl font-bold">{stats.preparingOrders + stats.readyOrders}</p>
+                <p className="text-blue-100 text-xs sm:text-sm font-medium">Órdenes Activas</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.preparingOrders + stats.readyOrders}</p>
                 <p className="text-blue-200 text-xs mt-1">{stats.preparingOrders} preparando, {stats.readyOrders} listas</p>
               </div>
-              <ShoppingCart className="h-8 w-8 text-blue-200" />
+              <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-blue-200" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm font-medium">Productos</p>
-                <p className="text-2xl font-bold">{stats.totalProducts}</p>
+                <p className="text-purple-100 text-xs sm:text-sm font-medium">Productos</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.totalProducts}</p>
                 <p className="text-purple-200 text-xs mt-1">{stats.totalProducts - stats.lowStockProducts} disponibles</p>
               </div>
-              <Package className="h-8 w-8 text-purple-200" />
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-200" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-rose-100 text-sm font-medium">Alertas de Stock</p>
-                <p className="text-2xl font-bold">{stats.lowStockProducts}</p>
+                <p className="text-rose-100 text-xs sm:text-sm font-medium">Alertas de Stock</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.lowStockProducts}</p>
                 <p className="text-rose-200 text-xs mt-1">{stats.outOfStockProducts} sin stock</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-rose-200" />
+              <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-rose-200" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Acciones Rápidas</CardTitle>
+      <Card className="mb-4 sm:mb-6">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Acciones Rápidas</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Button 
               variant="primary" 
               onClick={() => onNavigate?.('pos')}
               icon={ShoppingCart}
-              className="h-20 flex-col"
+              className="h-16 sm:h-20 flex-col text-xs sm:text-sm"
+              size="lg"
             >
               Nueva Orden
             </Button>
@@ -135,7 +136,8 @@ const Dashboard = ({ orders = [], inventory = [], onNavigate }) => {
               variant="info" 
               onClick={() => onNavigate?.('production')}
               icon={Coffee}
-              className="h-20 flex-col"
+              className="h-16 sm:h-20 flex-col text-xs sm:text-sm"
+              size="lg"
             >
               Ver Cocina
             </Button>
@@ -143,7 +145,8 @@ const Dashboard = ({ orders = [], inventory = [], onNavigate }) => {
               variant="warning" 
               onClick={() => onNavigate?.('inventory')}
               icon={Package}
-              className="h-20 flex-col"
+              className="h-16 sm:h-20 flex-col text-xs sm:text-sm"
+              size="lg"
             >
               Inventario
             </Button>

@@ -69,23 +69,23 @@ const Modal = ({
       />
       
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
         <div 
-          className={`relative w-full ${sizes[size]} bg-white rounded-xl shadow-2xl transform transition-all ${className}`}
+          className={`relative w-full ${sizes[size]} bg-white rounded-t-2xl sm:rounded-xl shadow-2xl transform transition-all modal-content ${className}`}
           {...props}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
               {title && (
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 pr-4">
                   {title}
                 </h2>
               )}
               {showCloseButton && (
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100 touch-target"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -94,7 +94,7 @@ const Modal = ({
           )}
           
           {/* Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6 max-h-[70vh] overflow-y-auto">
             {children}
           </div>
         </div>
@@ -117,7 +117,7 @@ export const ModalBody = ({ children, className = '', ...props }) => (
 );
 
 export const ModalFooter = ({ children, className = '', ...props }) => (
-  <div className={`flex justify-end space-x-3 pt-4 border-t border-gray-200 ${className}`} {...props}>
+  <div className={`flex flex-col-reverse sm:flex-row justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200 ${className}`} {...props}>
     {children}
   </div>
 );

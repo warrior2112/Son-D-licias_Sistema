@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { 
   Users, Settings, LogOut, Shield, User, ChevronDown, 
-  Download, BarChart3, Activity, Zap, RefreshCw, Package
+  Download, BarChart3, Activity, Zap, RefreshCw, Package, Menu
 } from 'lucide-react';
 import Button from '../ui/Button';
 import { USER_ROLE_LABELS } from '../../utils/authConstants';
@@ -18,7 +18,10 @@ const Header = ({
   orders = [], 
   inventory = [], 
   tables = [],
-  onRefreshData 
+  onRefreshData,
+  onToggleSidebar,
+  isMobile,
+  sidebarOpen 
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -126,18 +129,33 @@ const Header = ({
   return (
     <>
       <header className="bg-gradient-to-r from-slate-800 via-gray-800 to-slate-700 text-white shadow-xl relative">
-        <div className="px-6 py-4">
+        <div className="px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
-            {/* Logo y título */}
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">S</span>
+            {/* Mobile menu button & Logo */}
+            <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Mobile menu button */}
+              {isMobile && (
+                <button
+                  onClick={onToggleSidebar}
+                  className="p-2 rounded-lg hover:bg-slate-600/30 transition-colors touch-target"
+                  title="Abrir menú"
+                >
+                  <Menu className="h-6 w-6" />
+                </button>
+              )}
+              
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-lg md:text-xl">S</span>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">
+              <div className="hidden sm:block">
+                <h1 className="text-xl md:text-2xl font-bold text-white">
                   Son D'licias
                 </h1>
-                <p className="text-gray-300 text-sm">Sistema de Gestión</p>
+                <p className="text-gray-300 text-xs md:text-sm">Sistema de Gestión</p>
+              </div>
+              {/* Mobile: Solo mostrar título */}
+              <div className="sm:hidden">
+                <h1 className="text-lg font-bold text-white">Son D'licias</h1>
               </div>
             </div>
 
@@ -166,8 +184,8 @@ const Header = ({
             </div>
 
             {/* Información del usuario y acciones */}
-            <div className="flex items-center space-x-4">
-              {/* Slogan */}
+            <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Slogan - Oculto en mobile */}
               <span className="text-gray-300 font-medium bg-slate-700/50 px-3 py-1 rounded-full hidden xl:block">
                 Más que un antojo
               </span>
@@ -175,25 +193,25 @@ const Header = ({
               {/* Botón de actualización */}
               <button
                 onClick={handleRefreshData}
-                className="relative p-2 rounded-full hover:bg-slate-600/30 transition-colors"
+                className="relative p-2 rounded-full hover:bg-slate-600/30 transition-colors touch-target"
                 title="Actualizar datos"
                 disabled={isRefreshing}
               >
                 <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
 
-              {/* Acciones rápidas */}
-              <div className="relative">
+              {/* Acciones rápidas - Oculto en mobile pequeño */}
+              <div className="relative hidden sm:block">
                 <button
                   onClick={() => setShowQuickActions(!showQuickActions)}
-                  className="p-2 rounded-full hover:bg-slate-600/30 transition-colors"
+                  className="p-2 rounded-full hover:bg-slate-600/30 transition-colors touch-target"
                   title="Acciones rápidas"
                 >
                   <Zap className="h-5 w-5" />
                 </button>
 
                 {showQuickActions && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border z-50 py-2">
+                  <div className={`absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border z-50 py-2 ${isMobile ? 'dropdown-mobile' : ''}`}>
                     <div className="px-4 py-2 border-b">
                       <h3 className="font-semibold text-gray-800 flex items-center">
                         <Activity className="h-4 w-4 mr-2 text-orange-600" />
@@ -311,11 +329,11 @@ const Header = ({
               {/* Notificaciones MTB */}
               <NotificationBadge onClick={() => setShowNotifications(true)} />
 
-              {/* Gestión de usuarios (solo admin) */}
+              {/* Gestión de usuarios (solo admin) - Oculto en mobile pequeño */}
               {currentUser?.permissions?.canManageUsers && (
                 <button 
                   onClick={onOpenUserManagement}
-                  className="p-2 rounded-full hover:bg-slate-600/30 transition-colors"
+                  className="p-2 rounded-full hover:bg-slate-600/30 transition-colors touch-target hidden sm:block"
                   title="Gestionar usuarios"
                 >
                   <Settings className="h-5 w-5" />
@@ -326,10 +344,10 @@ const Header = ({
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-600/30 transition-colors"
+                  className="flex items-center space-x-2 md:space-x-3 p-2 rounded-lg hover:bg-slate-600/30 transition-colors touch-target"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                    <User className="h-5 w-5" />
+                  <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                    <User className="h-4 w-4 md:h-5 md:w-5" />
                   </div>
                   
                   <div className="hidden md:block text-left">
@@ -337,12 +355,12 @@ const Header = ({
                     <p className="text-xs text-amber-200">@{currentUser?.username}</p>
                   </div>
                   
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 hidden sm:block" />
                 </button>
 
                 {/* Dropdown menu mejorado */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50">
+                  <div className={`absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50 ${isMobile ? 'dropdown-mobile w-full' : ''}`}>
                     <div className="p-4 border-b bg-gradient-to-r from-slate-50 to-gray-50">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -451,25 +469,25 @@ const Header = ({
           </div>
         </div>
 
-        {/* Barra de estado del sistema */}
-        <div className="bg-black bg-opacity-30 px-6 py-2">
+        {/* Barra de estado del sistema - Responsive */}
+        <div className="bg-black bg-opacity-30 px-4 md:px-6 py-2">
           <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-300">
-                🟢 Sistema operativo • Última actualización: {new Date().toLocaleTimeString()}
+            <div className="flex items-center space-x-2 md:space-x-4 overflow-x-auto">
+              <span className="text-gray-300 whitespace-nowrap">
+                🟢 Sistema operativo • {new Date().toLocaleTimeString()}
               </span>
               {quickStats.activeOrders > 0 && (
-                <span className="text-blue-300 animate-pulse">
-                  ⚡ {quickStats.activeOrders} órdenes en cocina
+                <span className="text-blue-300 animate-pulse whitespace-nowrap">
+                  ⚡ {quickStats.activeOrders} órdenes
                 </span>
               )}
               {quickStats.lowStockItems > 0 && (
-                <span className="text-red-300 animate-pulse">
-                  ⚠️ {quickStats.lowStockItems} productos con stock bajo
+                <span className="text-red-300 animate-pulse whitespace-nowrap">
+                  ⚠️ {quickStats.lowStockItems} stock bajo
                 </span>
               )}
             </div>
-            <div className="text-gray-300">
+            <div className="text-gray-300 hidden md:block whitespace-nowrap">
               Usuario: {currentUser?.name} • {USER_ROLE_LABELS[currentUser?.role]}
             </div>
           </div>
