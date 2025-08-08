@@ -102,22 +102,6 @@ const LoginForm = ({ onLogin, loading, error }) => {
                 {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </Button>
             </form>
-
-            {/* Credenciales de prueba */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Credenciales de prueba:</h3>
-              <div className="space-y-2 text-xs">
-                <div className="bg-gray-50 p-2 rounded">
-                  <strong>Admin:</strong> admin / admin123
-                </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <strong>Cajero:</strong> cajero1 / cajero123
-                </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <strong>Cocina:</strong> cocina1 / cocina123
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
