@@ -96,10 +96,6 @@ const PaymentModal = ({
                 <span>Subtotal:</span>
                 <span>{CURRENCY} {parseFloat(order.subtotal || 0).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>IGV (18%):</span>
-                <span>{CURRENCY} {parseFloat(order.tax || 0).toFixed(2)}</span>
-              </div>
               <div className="flex justify-between items-center font-bold text-lg border-t pt-2">
                 <span>Total a Pagar:</span>
                 <span className="text-orange-600">

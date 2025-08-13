@@ -160,7 +160,7 @@ const PointOfSale = ({ onCreateOrder, currentUser }) => {
   };
 
   const calculateTax = () => {
-    return calculateSubtotal() * 0.18; // IGV 18%
+    return 0; // IGV removido
   };
 
   const calculateTotal = () => {
@@ -179,6 +179,20 @@ const PointOfSale = ({ onCreateOrder, currentUser }) => {
     if (currentOrder.length === 0) {
       alert('Agrega platos a la orden');
       return;
+    }
+
+    // Advertencia si no hay mesa seleccionada
+    if (!selectedTable && availableTables.length > 0) {
+      const confirmWithoutTable = window.confirm(
+        '⚠️ ADVERTENCIA: No has seleccionado ninguna mesa.\n\n' +
+        'La orden se enviará sin mesa asignada. ¿Estás seguro de continuar?\n\n' +
+        '• Presiona "Aceptar" para enviar sin mesa\n' +
+        '• Presiona "Cancelar" para seleccionar una mesa'
+      );
+      
+      if (!confirmWithoutTable) {
+        return; // Usuario cancela, regresa al modal para seleccionar mesa
+      }
     }
 
     const orderData = {
@@ -400,10 +414,6 @@ const PointOfSale = ({ onCreateOrder, currentUser }) => {
                       <span>Subtotal:</span>
                       <span>{CURRENCY} {calculateSubtotal().toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>IGV (18%):</span>
-                      <span>{CURRENCY} {calculateTax().toFixed(2)}</span>
-                    </div>
                     <div className="flex justify-between items-center font-bold text-lg border-t pt-2">
                       <span>Total:</span>
                       <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
@@ -532,10 +542,6 @@ const PointOfSale = ({ onCreateOrder, currentUser }) => {
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
                     <span>{CURRENCY} {calculateSubtotal().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>IGV (18%):</span>
-                    <span>{CURRENCY} {calculateTax().toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center font-bold text-lg">
                     <span>Total:</span>
