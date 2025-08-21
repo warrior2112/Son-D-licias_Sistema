@@ -1,6 +1,6 @@
 // Datos del menú completo de Son D'licias basado en la carta real
 
-import { CATEGORIES } from '../utils/constants';
+import { CATEGORIES } from '../../utils/constants';
 
 export const menuData = {
   [CATEGORIES.BEBIDAS_GASCIFICADAS]: [

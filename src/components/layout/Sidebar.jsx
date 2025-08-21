@@ -3,7 +3,6 @@
 import React from 'react';
 import { 
   BarChart3, 
-  ShoppingCart, 
   Utensils, 
   Package, 
   Coffee, 
@@ -24,13 +23,6 @@ const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, c
       icon: BarChart3,
       description: 'Resumen general',
       requiresPermission: null
-    },
-    { 
-      key: 'pos', 
-      name: 'Punto de Venta', 
-      icon: ShoppingCart,
-      description: 'Tomar órdenes',
-      requiresPermission: 'canProcessOrders'
     },
     { 
       key: 'orders', 

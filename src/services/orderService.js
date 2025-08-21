@@ -88,7 +88,7 @@ export const orderService = {
           payment_method: null, // Sin método de pago al crear
           payment_status: 'pendiente',
           notes: orderData.notes || null,
-          created_by: orderData.createdBy || null
+          created_by: null // Cambiar a null por ahora
         })
         .select()
         .single();
@@ -126,6 +126,65 @@ export const orderService = {
       return { success: true, data: order };
     } catch (error) {
       console.error('Error al crear orden:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Actualizar orden completa
+  async updateOrder(orderId, orderData) {
+    try {
+      // Asegurar que los valores numéricos estén definidos
+      const subtotal = parseFloat(orderData.subtotal) || 0;
+      const tax = parseFloat(orderData.tax) || 0;
+      const total = parseFloat(orderData.total) || subtotal + tax;
+
+      // Actualizar la orden principal
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .update({
+          customer_name: orderData.customerName || null,
+          customer_phone: orderData.customerPhone || null,
+          subtotal: subtotal,
+          tax: tax,
+          total: total,
+          notes: orderData.notes || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Eliminar items existentes
+      const { error: deleteError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', orderId);
+
+      if (deleteError) throw deleteError;
+
+      // Crear los nuevos items
+      if (orderData.items && orderData.items.length > 0) {
+        const orderItems = orderData.items.map(item => ({
+          order_id: orderId,
+          product_id: item.id,
+          quantity: item.quantity,
+          unit_price: parseFloat(item.price),
+          subtotal: parseFloat(item.price) * item.quantity,
+          notes: item.notes || null
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+      }
+
+      return { success: true, data: order };
+    } catch (error) {
+      console.error('Error al actualizar orden:', error);
       return { success: false, error: error.message };
     }
   },

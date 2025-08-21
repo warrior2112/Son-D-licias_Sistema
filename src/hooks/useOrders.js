@@ -120,16 +120,58 @@ export const useOrders = () => {
     }
   }, []);
 
+  // Actualizar pedido completo
+  const updateOrder = useCallback(async (orderId, orderData) => {
+    try {
+      setLoading(true);
+      
+      // Primero eliminar los items existentes y crear los nuevos
+      const result = await orderService.updateOrder(orderId, {
+        customerName: orderData.customerName,
+        customerPhone: orderData.customerPhone,
+        subtotal: orderData.subtotal,
+        tax: orderData.tax,
+        total: orderData.total,
+        notes: orderData.notes,
+        items: orderData.items.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      });
+      
+      if (result.success) {
+        await loadOrders(); // Recargar órdenes
+        return { success: true };
+      } else {
+        setError(result.error);
+        return { success: false, error: result.error };
+      }
+    } catch (err) {
+      console.error('Error updating order:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [loadOrders]);
+
   // Actualizar método de pago
   const updatePayment = useCallback(async (orderId, paymentMethod, paymentStatus = 'pagado') => {
     try {
-      // Este método necesitaría ser implementado en orderService
-      setOrders(prev => prev.map(order => 
-        order.id === orderId 
-          ? { ...order, paymentMethod, paymentStatus }
-          : order
-      ));
-      return { success: true };
+      const result = await orderService.updatePayment(orderId, paymentMethod, paymentStatus);
+      
+      if (result.success) {
+        setOrders(prev => prev.map(order => 
+          order.id === orderId 
+            ? { ...order, paymentMethod, paymentStatus }
+            : order
+        ));
+        return { success: true };
+      } else {
+        setError(result.error);
+        return { success: false, error: result.error };
+      }
     } catch (err) {
       console.error('Error updating payment:', err);
       setError(err.message);
@@ -198,6 +240,7 @@ export const useOrders = () => {
     error,
     loadOrders,
     createOrder,
+    updateOrder,
     updateOrderStatus,
     updatePayment,
     deleteOrder,

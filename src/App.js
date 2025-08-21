@@ -14,7 +14,6 @@ import { NotificationProvider } from './components/common/NotificationSystem';
 
 // Pages
 import Dashboard from './pages/Dashboard';
-import PointOfSale from './pages/PointOfSale';
 import Orders from './pages/Orders';
 import Inventory from './pages/Inventory';
 import Production from './pages/Production';
@@ -56,6 +55,7 @@ function App() {
     orders,
     loading: ordersLoading,
     createOrder,
+    updateOrder,
     updateOrderStatus,
     deleteOrder,
     loadOrders
@@ -344,6 +344,25 @@ function App() {
     }
   };
 
+  // Manejar actualización de órdenes con recarga de datos
+  const handleUpdateOrder = async (orderId, orderData) => {
+    try {
+      const result = await updateOrder(orderId, orderData);
+      if (result.success) {
+        await Promise.all([
+          loadOrders(),
+          loadTables()
+        ]);
+        return result;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error updating order:', error);
+      throw error;
+    }
+  };
+
   // Manejar eliminación de órdenes con recarga de mesas
   const handleDeleteOrder = async (orderId) => {
     try {
@@ -450,13 +469,6 @@ function App() {
           />
         );
 
-      case ROUTES.POS:
-        return (
-          <PointOfSale
-            onCreateOrder={handleCreateOrder}
-            {...commonProps}
-          />
-        );
 
       case ROUTES.ORDERS:
         return (
@@ -502,6 +514,11 @@ function App() {
       case 'tables':
         return (
           <TableManagement
+            orders={orders}
+            onCreateOrder={handleCreateOrder}
+            onUpdateOrder={handleUpdateOrder}
+            onDeleteOrder={handleDeleteOrder}
+            onReloadOrders={loadOrders}
             {...commonProps}
           />
         );

@@ -1,14 +1,23 @@
 // Gestión de mesas del restaurante
 
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Users, MapPin, AlertCircle, CheckCircle, Clock, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, MapPin, AlertCircle, CheckCircle, Clock, Settings, ShoppingCart } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input, { Select } from '../components/ui/Input';
 import Modal, { ModalBody, ModalFooter } from '../components/ui/Modal';
+import OrderModal from '../components/common/OrderModal';
 import useTables from '../hooks/useTables';
+import useOrders from '../hooks/useOrders';
 
-const TableManagement = ({ currentUser }) => {
+const TableManagement = ({ 
+  currentUser, 
+  orders: ordersFromApp,
+  onCreateOrder: createOrderFromApp,
+  onUpdateOrder: updateOrderFromApp,
+  onDeleteOrder: deleteOrderFromApp,
+  onReloadOrders: reloadOrdersFromApp
+}) => {
   const {
     tables,
     loading,
@@ -21,9 +30,27 @@ const TableManagement = ({ currentUser }) => {
     clearError
   } = useTables();
 
+  // Usar las órdenes y funciones que vienen del App.js para sincronización global
+  const orders = ordersFromApp || [];
+  const ordersLoading = false; // Se maneja a nivel global
+  
+  // Funciones locales solo para casos donde no se pasan desde App.js
+  const {
+    createOrder: localCreateOrder,
+    updateOrder: localUpdateOrder,
+    deleteOrder: localDeleteOrder
+  } = useOrders();
+  
+  // Usar funciones de App.js si están disponibles, sino usar las locales
+  const createOrder = createOrderFromApp || localCreateOrder;
+  const updateOrder = updateOrderFromApp || localUpdateOrder;
+  const removeOrder = deleteOrderFromApp || localDeleteOrder;
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
+  const [selectedTableOrder, setSelectedTableOrder] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
 
   const [newTable, setNewTable] = useState({
@@ -99,6 +126,66 @@ const TableManagement = ({ currentUser }) => {
     if (!result.success) {
       alert('Error al cambiar estado: ' + result.error);
     }
+  };
+
+  // Manejar click en mesa
+  const handleTableClick = (table) => {
+    // Verificar si la mesa tiene un pedido activo
+    const activeOrder = orders.find(order => 
+      order.tableId === table.id && 
+      (order.status === 'preparando' || order.status === 'listo')
+    );
+
+    setSelectedTable(table);
+    setSelectedTableOrder(activeOrder || null);
+    setShowOrderModal(true);
+  };
+
+  // Crear pedido
+  const handleCreateOrder = async (orderData) => {
+    const result = await createOrder(orderData);
+    if (result.success) {
+      // Cambiar estado de mesa a ocupada
+      await updateTableStatus(orderData.tableId, 'occupied');
+      // La recarga de órdenes se hace a nivel global en App.js
+      alert('Pedido creado exitosamente');
+      return true;
+    } else {
+      alert('Error al crear pedido: ' + result.error);
+      return false;
+    }
+  };
+
+  // Actualizar pedido
+  const handleUpdateOrder = async (orderId, orderData) => {
+    const result = await updateOrder(orderId, orderData);
+    if (result.success) {
+      // La recarga de órdenes se hace a nivel global en App.js
+      alert('Pedido actualizado exitosamente');
+      return true;
+    } else {
+      alert('Error al actualizar pedido: ' + result.error);
+      return false;
+    }
+  };
+
+  // Eliminar pedido
+  const handleDeleteOrder = async (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      const result = await removeOrder(orderId);
+      if (result.success) {
+        // Cambiar estado de mesa a disponible
+        await updateTableStatus(order.tableId, 'available');
+        // La recarga de órdenes se hace a nivel global en App.js
+        alert('Pedido eliminado exitosamente');
+        return true;
+      } else {
+        alert('Error al eliminar pedido: ' + result.error);
+        return false;
+      }
+    }
+    return false;
   };
 
   const getStatusColor = (status) => {
@@ -248,8 +335,13 @@ const TableManagement = ({ currentUser }) => {
               onEdit={openEditModal}
               onDelete={handleDeleteTable}
               onStatusChange={handleStatusChange}
+              onTableClick={handleTableClick}
               getStatusColor={getStatusColor}
               getStatusIcon={getStatusIcon}
+              hasActiveOrder={orders.some(order => 
+                order.tableId === table.id && 
+                (order.status === 'preparando' || order.status === 'listo')
+              )}
             />
           ))}
         </div>
@@ -259,9 +351,11 @@ const TableManagement = ({ currentUser }) => {
           onEdit={openEditModal}
           onDelete={handleDeleteTable}
           onStatusChange={handleStatusChange}
+          onTableClick={handleTableClick}
           getStatusColor={getStatusColor}
           getStatusIcon={getStatusIcon}
           statusOptions={statusOptions}
+          orders={orders}
         />
       )}
 
@@ -355,13 +449,29 @@ const TableManagement = ({ currentUser }) => {
           </Button>
         </ModalFooter>
       </Modal>
+
+      {/* Order Modal */}
+      <OrderModal
+        isOpen={showOrderModal}
+        onClose={() => {
+          setShowOrderModal(false);
+          setSelectedTable(null);
+          setSelectedTableOrder(null);
+        }}
+        table={selectedTable}
+        existingOrder={selectedTableOrder}
+        onCreateOrder={handleCreateOrder}
+        onUpdateOrder={handleUpdateOrder}
+        onDeleteOrder={handleDeleteOrder}
+        loading={ordersLoading}
+      />
     </div>
   );
 };
 
 // Componente de tarjeta de mesa
-const TableCard = ({ table, onEdit, onDelete, onStatusChange, getStatusColor, getStatusIcon }) => (
-  <Card className="hover:shadow-lg transition-all duration-200 relative">
+const TableCard = ({ table, onEdit, onDelete, onStatusChange, onTableClick, getStatusColor, getStatusIcon, hasActiveOrder }) => (
+  <Card className="hover:shadow-lg transition-all duration-200 relative cursor-pointer" onClick={() => onTableClick(table)}>
     <CardContent className="p-4">
       <div className="text-center">
         <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -371,6 +481,13 @@ const TableCard = ({ table, onEdit, onDelete, onStatusChange, getStatusColor, ge
         </div>
         
         <h3 className="font-semibold text-gray-800 mb-1">Mesa {table.table_number}</h3>
+        
+        {hasActiveOrder && (
+          <div className="flex items-center justify-center space-x-1 mb-2">
+            <ShoppingCart className="h-4 w-4 text-orange-500" />
+            <span className="text-xs text-orange-600 font-medium">Pedido Activo</span>
+          </div>
+        )}
         
         <div className="flex items-center justify-center space-x-1 mb-2">
           <Users className="h-4 w-4 text-gray-500" />
@@ -397,13 +514,19 @@ const TableCard = ({ table, onEdit, onDelete, onStatusChange, getStatusColor, ge
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onEdit(table)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(table);
+            }}
             icon={Edit}
           />
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onDelete(table.id, table.table_number)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(table.id, table.table_number);
+            }}
             icon={Trash2}
             className="text-red-600 hover:text-red-800"
           />
@@ -414,7 +537,7 @@ const TableCard = ({ table, onEdit, onDelete, onStatusChange, getStatusColor, ge
 );
 
 // Componente de lista de mesas
-const TableList = ({ tables, onEdit, onDelete, onStatusChange, getStatusColor, getStatusIcon, statusOptions }) => (
+const TableList = ({ tables, onEdit, onDelete, onStatusChange, onTableClick, getStatusColor, getStatusIcon, statusOptions, orders }) => (
   <Card>
     <CardContent className="p-0">
       <div className="overflow-x-auto">
@@ -429,8 +552,14 @@ const TableList = ({ tables, onEdit, onDelete, onStatusChange, getStatusColor, g
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {tables.map((table) => (
-              <tr key={table.id} className="hover:bg-gray-50">
+            {tables.map((table) => {
+              const hasActiveOrder = orders.some(order => 
+                order.tableId === table.id && 
+                (order.status === 'preparando' || order.status === 'listo')
+              );
+              
+              return (
+              <tr key={table.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => onTableClick(table)}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -438,6 +567,12 @@ const TableList = ({ tables, onEdit, onDelete, onStatusChange, getStatusColor, g
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">Mesa {table.table_number}</div>
+                      {hasActiveOrder && (
+                        <div className="flex items-center space-x-1 mt-1">
+                          <ShoppingCart className="h-3 w-3 text-orange-500" />
+                          <span className="text-xs text-orange-600">Pedido Activo</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -470,19 +605,26 @@ const TableList = ({ tables, onEdit, onDelete, onStatusChange, getStatusColor, g
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit(table)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(table);
+                    }}
                     icon={Edit}
                   />
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(table.id, table.table_number)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(table.id, table.table_number);
+                    }}
                     icon={Trash2}
                     className="text-red-600 hover:text-red-800"
                   />
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
