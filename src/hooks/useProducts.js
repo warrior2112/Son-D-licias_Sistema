@@ -17,14 +17,7 @@ export const useProducts = () => {
 
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          categories (
-            id,
-            name,
-            slug
-          )
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('name');
 
@@ -85,11 +78,21 @@ export const useProducts = () => {
     try {
       setLoading(true);
       
-      // Buscar categoría por slug
-      const category = categories.find(cat => cat.slug === productData.category);
-      if (!category) {
-        const availableCategories = categories.map(c => `${c.name} (${c.slug})`).join(', ');
-        throw new Error(`Categoría "${productData.category}" no encontrada. Categorías disponibles: ${availableCategories}`);
+      // Determinar category_id
+      let categoryId;
+      if (productData.category_id) {
+        // Si ya viene category_id, usarlo directamente
+        categoryId = parseInt(productData.category_id);
+      } else if (productData.category) {
+        // Si viene category (slug), buscarlo
+        const category = categories.find(cat => cat.slug === productData.category);
+        if (!category) {
+          const availableCategories = categories.map(c => `${c.name} (${c.slug})`).join(', ');
+          throw new Error(`Categoría "${productData.category}" no encontrada. Categorías disponibles: ${availableCategories}`);
+        }
+        categoryId = category.id;
+      } else {
+        throw new Error('Debe especificar una categoría (category_id o category)');
       }
 
       // Preparar datos del producto (solo campos que existen en la tabla)
@@ -97,7 +100,7 @@ export const useProducts = () => {
         name: productData.name,
         description: productData.description || null,
         price: parseFloat(productData.price) || 0,
-        category_id: category.id,
+        category_id: categoryId,
         stock: parseInt(productData.stock) || 0,
         min_stock: parseInt(productData.minStock) || 5,
         ingredients: productData.ingredients || null,
@@ -120,14 +123,7 @@ export const useProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .insert(productToInsert)
-        .select(`
-          *,
-          categories (
-            id,
-            name,
-            slug
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -161,6 +157,10 @@ export const useProducts = () => {
               updateData.category_id = category.id;
             }
             break;
+          case 'category_id':
+            // Usar directamente el category_id
+            updateData.category_id = parseInt(updates[key]);
+            break;
           case 'minStock':
             updateData.min_stock = parseInt(updates[key]);
             break;
@@ -191,6 +191,10 @@ export const useProducts = () => {
           case 'nutritionalInfo':
             updateData.nutritional_info = updates[key];
             break;
+          case 'updatedAt':
+          case 'createdAt':
+            // Ignore timestamp fields - they should be handled by database triggers or not used
+            break;
           default:
             updateData[key] = updates[key];
         }
@@ -200,14 +204,7 @@ export const useProducts = () => {
         .from('products')
         .update(updateData)
         .eq('id', productId)
-        .select(`
-          *,
-          categories (
-            id,
-            name,
-            slug
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;

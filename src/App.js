@@ -20,6 +20,7 @@ import Production from './pages/Production';
 import Reports from './pages/Reports';
 import TableManagement from './pages/TableManagement';
 import MenuManagement from './pages/MenuManagement';
+import CategoryManagement from './pages/CategoryManagement';
 import UserManagementPage from './pages/UserManagementPage';
 
 // Hooks y servicios
@@ -295,7 +296,7 @@ function App() {
         ...dishData,
         isDish: true,
         isIngredient: false,
-        stock: 0, // Los platos no tienen stock
+        stock: 999, // Los platos tienen stock ilimitado
         minStock: 0
       });
       if (result.success) {
@@ -530,6 +531,13 @@ function App() {
             onAddDish={handleAddDish} // Función específica para platos
             onUpdateDish={handleUpdateDish}
             onDeleteDish={handleDeleteDish}
+            {...commonProps}
+          />
+        );
+
+      case 'categories':
+        return (
+          <CategoryManagement
             {...commonProps}
           />
         );

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Minus, ShoppingCart, X, Search, Edit, Trash2 } from 'lucide-react';
 import Modal, { ModalBody, ModalFooter } from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { getAllProducts, getProductsByCategory } from '../../services/data/menuItems';
 import { CATEGORIES } from '../../utils/constants';
+import useProducts from '../../hooks/useProducts';
+import useCategories from '../../hooks/useCategories';
 
 const OrderModal = ({ 
   isOpen, 
@@ -24,6 +26,14 @@ const OrderModal = ({
   const [orderNotes, setOrderNotes] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Hook para obtener productos de la base de datos
+  const { products, loading: productsLoading } = useProducts();
+  
+  // Hook para obtener categorías de menú
+  const { getMenuCategories } = useCategories();
+  const menuCategories = getMenuCategories();
+
+
   // Cargar datos del pedido existente si existe
   useEffect(() => {
     if (existingOrder) {
@@ -41,14 +51,42 @@ const OrderModal = ({
     }
   }, [existingOrder]);
 
-  // Obtener productos disponibles
-  const allProducts = getAllProducts();
+  // Obtener productos disponibles - priorizar productos de la base de datos
+  const databaseProducts = products.filter(p => {
+    // Filtrar solo platos del menú (no insumos)
+    const isMenuDish = p.isDish === true || 
+                      (p.isDish !== false && p.isIngredient !== true) ||
+                      menuCategories.some(cat => cat.id === parseInt(p.category_id));
+    const isActive = p.is_active !== false;
+    
+    return isMenuDish && isActive;
+  });
+  
+  const staticProducts = getAllProducts(); // Productos estáticos como fallback
+  
+  // Usar productos de la base de datos si están disponibles, sino usar estáticos
+  const allProducts = databaseProducts.length > 0 ? databaseProducts : staticProducts;
   
   // Filtrar productos por búsqueda y categoría
   const filteredProducts = allProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory && product.stock > 0;
+    
+    // Para productos de la base de datos, usar category_id
+    let matchesCategory = true;
+    if (selectedCategory !== 'all') {
+      if (product.category_id) {
+        // Producto de base de datos - comparar con category_id
+        matchesCategory = product.category_id.toString() === selectedCategory;
+      } else if (product.category) {
+        // Producto estático - comparar con category slug
+        matchesCategory = product.category === selectedCategory;
+      }
+    }
+    
+    // Los platos del menú no necesitan stock, los insumos sí
+    const hasStock = product.isDish === true || product.stock > 0;
+    const isAvailable = product.isAvailable !== false; // Verificar disponibilidad
+    return matchesSearch && matchesCategory && hasStock && isAvailable;
   });
 
   // Agregar producto al pedido
@@ -171,16 +209,25 @@ const OrderModal = ({
     onClose();
   };
 
+  // Opciones de categoría - usar categorías de la base de datos si están disponibles
   const categoryOptions = [
     { value: 'all', label: 'Todas las categorías' },
-    { value: CATEGORIES.HAMBURGUESAS, label: 'Hamburguesas' },
-    { value: CATEGORIES.A_LA_CARTA, label: 'A la Carta' },
-    { value: CATEGORIES.BEBIDAS_GASCIFICADAS, label: 'Bebidas Gaseosas' },
-    { value: CATEGORIES.JUGOS, label: 'Jugos' },
-    { value: CATEGORIES.BEBIDAS_CALIENTES, label: 'Bebidas Calientes' },
-    { value: CATEGORIES.BEBIDAS_FRIAS, label: 'Bebidas Frías' },
-    { value: CATEGORIES.TRAGOS, label: 'Tragos' },
-    { value: CATEGORIES.POSTRES, label: 'Postres' }
+    // Categorías de la base de datos (tienen prioridad)
+    ...menuCategories.map(cat => ({ 
+      value: cat.id.toString(), 
+      label: cat.name 
+    })),
+    // Categorías estáticas como fallback (solo si no hay categorías de BD)
+    ...(menuCategories.length === 0 ? [
+      { value: CATEGORIES.HAMBURGUESAS, label: 'Hamburguesas' },
+      { value: CATEGORIES.A_LA_CARTA, label: 'A la Carta' },
+      { value: CATEGORIES.BEBIDAS_GASCIFICADAS, label: 'Bebidas Gaseosas' },
+      { value: CATEGORIES.JUGOS, label: 'Jugos' },
+      { value: CATEGORIES.BEBIDAS_CALIENTES, label: 'Bebidas Calientes' },
+      { value: CATEGORIES.BEBIDAS_FRIAS, label: 'Bebidas Frías' },
+      { value: CATEGORIES.TRAGOS, label: 'Tragos' },
+      { value: CATEGORIES.POSTRES, label: 'Postres' }
+    ] : [])
   ];
 
   return (
@@ -220,29 +267,46 @@ const OrderModal = ({
 
             {/* Lista de productos */}
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {filteredProducts.map(product => (
-                <div 
-                  key={product.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
-                >
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm">{product.name}</h4>
-                    <p className="text-xs text-gray-600">S/ {product.price.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500">Stock: {product.stock}</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => addProduct(product)}
-                    icon={Plus}
-                  >
-                    Agregar
-                  </Button>
+              {productsLoading ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin h-6 w-6 border-2 border-indigo-600 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-500">Cargando productos...</p>
                 </div>
-              ))}
-              
-              {filteredProducts.length === 0 && (
-                <p className="text-center text-gray-500 py-4">No se encontraron productos</p>
+              ) : (
+                <>
+                  {filteredProducts.map(product => (
+                    <div 
+                      key={product.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{product.name}</h4>
+                        <p className="text-xs text-gray-600">S/ {product.price.toFixed(2)}</p>
+                        {/* Solo mostrar stock para productos que no sean platos del menú */}
+                        {!product.isDish && (
+                          <p className="text-xs text-gray-500">Stock: {product.stock}</p>
+                        )}
+                        {product.isDish && product.preparationTime && (
+                          <p className="text-xs text-blue-500">⏱️ {product.preparationTime} min</p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => addProduct(product)}
+                        icon={Plus}
+                      >
+                        Agregar
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {filteredProducts.length === 0 && (
+                    <div className="text-center text-gray-500 py-4">
+                      <p>No se encontraron productos</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

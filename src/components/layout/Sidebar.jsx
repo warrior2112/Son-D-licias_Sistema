@@ -12,7 +12,8 @@ import {
   Users,
   Shield,
   Menu,
-  MapPin
+  MapPin,
+  Tag
 } from 'lucide-react';
 
 const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, currentUser, isMobile, isOpen, onClose }) => {
@@ -64,6 +65,13 @@ const Sidebar = ({ activeModule, setActiveModule, isCollapsed, setIsCollapsed, c
       name: 'Menú Digital', 
       icon: Menu,
       description: 'Gestionar carta',
+      requiresPermission: 'canManageInventory'
+    },
+    { 
+      key: 'categories', 
+      name: 'Categorías', 
+      icon: Tag,
+      description: 'Gestionar categorías',
       requiresPermission: 'canManageInventory'
     },
     { 

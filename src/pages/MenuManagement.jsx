@@ -6,42 +6,14 @@ import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import Button from '../components/ui/Button';
 import Input, { Select, Textarea } from '../components/ui/Input';
 import Modal, { ModalBody, ModalFooter } from '../components/ui/Modal';
+import useCategories from '../hooks/useCategories';
 import { CURRENCY } from '../utils/constants';
 
-// Categorías específicas para platos del menú
-const DISH_CATEGORIES = {
-  ENTRADAS: 'entradas',
-  PLATOS_PRINCIPALES: 'platos-principales', 
-  HAMBURGUESAS: 'hamburguesas',
-  POLLO: 'pollo',
-  CARNES: 'carnes',
-  PASTAS: 'pastas',
-  ENSALADAS: 'ensaladas',
-  SOPAS: 'sopas',
-  POSTRES: 'postres',
-  BEBIDAS_PREPARADAS: 'bebidas-preparadas',
-  JUGOS_FRESCOS: 'jugos-frescos',
-  BEBIDAS_CALIENTES: 'bebidas-calientes',
-  TRAGOS: 'tragos'
-};
-
-const DISH_CATEGORY_LABELS = {
-  [DISH_CATEGORIES.ENTRADAS]: 'Entradas',
-  [DISH_CATEGORIES.PLATOS_PRINCIPALES]: 'Platos Principales',
-  [DISH_CATEGORIES.HAMBURGUESAS]: 'Hamburguesas',
-  [DISH_CATEGORIES.POLLO]: 'Especialidades de Pollo',
-  [DISH_CATEGORIES.CARNES]: 'Carnes',
-  [DISH_CATEGORIES.PASTAS]: 'Pastas',
-  [DISH_CATEGORIES.ENSALADAS]: 'Ensaladas',
-  [DISH_CATEGORIES.SOPAS]: 'Sopas y Cremas',
-  [DISH_CATEGORIES.POSTRES]: 'Postres',
-  [DISH_CATEGORIES.BEBIDAS_PREPARADAS]: 'Bebidas Preparadas',
-  [DISH_CATEGORIES.JUGOS_FRESCOS]: 'Jugos Frescos',
-  [DISH_CATEGORIES.BEBIDAS_CALIENTES]: 'Bebidas Calientes',
-  [DISH_CATEGORIES.TRAGOS]: 'Tragos y Cocteles'
-};
 
 const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, currentUser }) => {
+  const { getMenuCategories } = useCategories();
+  const menuCategories = getMenuCategories();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -54,7 +26,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
     name: '',
     description: '',
     price: '',
-    category: '',
+    category_id: menuCategories[0]?.id || '',
     ingredients: '',
     isAvailable: true,
     isSpecial: false,
@@ -69,7 +41,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
   // Filtrar solo platos del menú (no insumos)
   const menuDishes = useMemo(() => {
     return dishes.filter(item => 
-      Object.values(DISH_CATEGORIES).includes(item.category) || 
+      menuCategories.some(cat => cat.id === parseInt(item.category_id)) || 
       item.isDish === true ||
       !item.isIngredient // Si no está marcado como ingrediente, asumimos que es plato
     );
@@ -88,7 +60,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
     }
 
     if (categoryFilter) {
-      filtered = filtered.filter(dish => dish.category === categoryFilter);
+      filtered = filtered.filter(dish => dish.category_id === parseInt(categoryFilter));
     }
 
     if (statusFilter) {
@@ -120,7 +92,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
   }), [menuDishes]);
 
   const handleCreateDish = async () => {
-    if (!newDish.name || !newDish.price || !newDish.category) {
+    if (!newDish.name || !newDish.price || !newDish.category_id) {
       alert('Nombre, precio y categoría son obligatorios');
       return;
     }
@@ -131,9 +103,11 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
       preparationTime: parseInt(newDish.preparationTime) || null,
       isDish: true, // Marcar como plato del menú
       isIngredient: false, // No es insumo
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      category_id: newDish.category_id,
+      stock: 999 // Agregar stock por defecto para platos
     };
+    // Remove any 'category' property that might exist
+    delete dishData.category;
 
     onAddDish(dishData);
     
@@ -141,7 +115,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
       name: '',
       description: '',
       price: '',
-      category: '',
+      category_id: menuCategories[0]?.id || '',
       ingredients: '',
       isAvailable: true,
       isSpecial: false,
@@ -155,7 +129,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
   };
 
   const handleEditDish = async () => {
-    if (!editDish.name || !editDish.price || !editDish.category) {
+    if (!editDish.name || !editDish.price || !editDish.category_id) {
       alert('Nombre, precio y categoría son obligatorios');
       return;
     }
@@ -164,8 +138,10 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
       ...editDish,
       price: parseFloat(editDish.price),
       preparationTime: editDish.preparationTime ? parseInt(editDish.preparationTime) : null,
-      updatedAt: new Date().toISOString()
+      category_id: editDish.category_id
     };
+    // Remove any 'category' property that might exist
+    delete updates.category;
 
     onUpdateDish(selectedDish.id, updates);
     setShowEditModal(false);
@@ -180,7 +156,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
       name: dish.name,
       description: dish.description || '',
       price: dish.price.toString(),
-      category: dish.category,
+      category_id: dish.category_id,
       ingredients: dish.ingredients || '',
       isAvailable: dish.isAvailable !== false,
       isSpecial: dish.isSpecial || false,
@@ -202,14 +178,18 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
   const toggleDishAvailability = (dish) => {
     onUpdateDish(dish.id, {
       isAvailable: !dish.isAvailable,
-      updatedAt: new Date().toISOString()
     });
   };
 
   const categoryOptions = [
     { value: '', label: 'Todas las categorías' },
-    ...Object.entries(DISH_CATEGORY_LABELS).map(([key, label]) => ({ value: key, label }))
+    ...menuCategories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
   ];
+
+  const categorySelectOptions = menuCategories.map(cat => ({ 
+    value: cat.id.toString(), 
+    label: cat.name 
+  }));
 
   const statusOptions = [
     { value: '', label: 'Todos los estados' },
@@ -344,6 +324,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
           onEdit={openEditModal}
           onDelete={handleDeleteDish}
           onToggleAvailability={toggleDishAvailability}
+          menuCategories={menuCategories}
         />
       ) : (
         <DishCards 
@@ -351,6 +332,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
           onEdit={openEditModal}
           onDelete={handleDeleteDish}
           onToggleAvailability={toggleDishAvailability}
+          menuCategories={menuCategories}
         />
       )}
 
@@ -361,7 +343,7 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
         newDish={newDish}
         setNewDish={setNewDish}
         onSubmit={handleCreateDish}
-        categoryOptions={categoryOptions.slice(1)}
+        categoryOptions={categorySelectOptions}
       />
 
       {/* Edit Dish Modal */}
@@ -372,14 +354,14 @@ const MenuManagement = ({ dishes = [], onAddDish, onUpdateDish, onDeleteDish, cu
         editDish={editDish}
         setEditDish={setEditDish}
         onSubmit={handleEditDish}
-        categoryOptions={categoryOptions.slice(1)}
+        categoryOptions={categorySelectOptions}
       />
     </div>
   );
 };
 
 // Componente de tabla de platos
-const DishTable = ({ dishes, onEdit, onDelete, onToggleAvailability }) => (
+const DishTable = ({ dishes, onEdit, onDelete, onToggleAvailability, menuCategories }) => (
   <Card>
     <CardContent className="p-0">
       <div className="overflow-x-auto">
@@ -402,6 +384,7 @@ const DishTable = ({ dishes, onEdit, onDelete, onToggleAvailability }) => (
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onToggleAvailability={onToggleAvailability}
+                menuCategories={menuCategories}
               />
             ))}
           </tbody>
@@ -420,7 +403,7 @@ const DishTable = ({ dishes, onEdit, onDelete, onToggleAvailability }) => (
 );
 
 // Fila de tabla individual
-const DishTableRow = ({ dish, onEdit, onDelete, onToggleAvailability }) => {
+const DishTableRow = ({ dish, onEdit, onDelete, onToggleAvailability, menuCategories }) => {
   const isAvailable = dish.isAvailable !== false;
   
   return (
@@ -448,7 +431,7 @@ const DishTableRow = ({ dish, onEdit, onDelete, onToggleAvailability }) => {
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-        {DISH_CATEGORY_LABELS[dish.category] || dish.category}
+        {menuCategories.find(cat => cat.id === parseInt(dish.category_id))?.name || 'Sin categoría'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-semibold text-gray-900">
@@ -500,7 +483,7 @@ const DishTableRow = ({ dish, onEdit, onDelete, onToggleAvailability }) => {
 };
 
 // Vista de tarjetas
-const DishCards = ({ dishes, onEdit, onDelete, onToggleAvailability }) => (
+const DishCards = ({ dishes, onEdit, onDelete, onToggleAvailability, menuCategories }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {dishes.map((dish) => (
       <DishCard
@@ -509,12 +492,13 @@ const DishCards = ({ dishes, onEdit, onDelete, onToggleAvailability }) => (
         onEdit={onEdit}
         onDelete={onDelete}
         onToggleAvailability={onToggleAvailability}
+        menuCategories={menuCategories}
       />
     ))}
   </div>
 );
 
-const DishCard = ({ dish, onEdit, onDelete, onToggleAvailability }) => {
+const DishCard = ({ dish, onEdit, onDelete, onToggleAvailability, menuCategories }) => {
   const isAvailable = dish.isAvailable !== false;
   
   return (
@@ -535,7 +519,7 @@ const DishCard = ({ dish, onEdit, onDelete, onToggleAvailability }) => {
         
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-            {DISH_CATEGORY_LABELS[dish.category]}
+            {menuCategories.find(cat => cat.id === parseInt(dish.category_id))?.name || 'Sin categoría'}
           </span>
           <div className="flex items-center space-x-2">
             {dish.preparationTime && (
@@ -619,8 +603,8 @@ const CreateDishModal = ({ isOpen, onClose, newDish, setNewDish, onSubmit, categ
         <div className="grid grid-cols-2 gap-4">
           <Select
             label="Categoría"
-            value={newDish.category}
-            onChange={(e) => setNewDish({...newDish, category: e.target.value})}
+            value={newDish.category_id}
+            onChange={(e) => setNewDish({...newDish, category_id: e.target.value})}
             options={categoryOptions}
             required
           />
@@ -731,8 +715,8 @@ const EditDishModal = ({ isOpen, onClose, selectedDish, editDish, setEditDish, o
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="Categoría"
-              value={editDish.category || selectedDish.category}
-              onChange={(e) => setEditDish({...editDish, category: e.target.value})}
+              value={editDish.category_id || selectedDish.category_id}
+              onChange={(e) => setEditDish({...editDish, category_id: e.target.value})}
               options={categoryOptions}
               required
             />

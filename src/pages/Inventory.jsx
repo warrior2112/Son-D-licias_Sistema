@@ -6,6 +6,7 @@ import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import Button from '../components/ui/Button';
 import Input, { Select } from '../components/ui/Input';
 import Modal, { ModalBody, ModalFooter } from '../components/ui/Modal';
+import useCategories from '../hooks/useCategories';
 import { CURRENCY, STOCK_ALERTS } from '../utils/constants';
 
 // Categorías específicas para insumos
@@ -49,6 +50,9 @@ const MEASUREMENT_UNITS = [
 ];
 
 const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIngredient, onDeleteIngredient }) => {
+  const { getInventoryCategories } = useCategories();
+  const inventoryCategories = getInventoryCategories();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
@@ -63,7 +67,7 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
   const [newIngredient, setNewIngredient] = useState({
     name: '',
     description: '',
-    category: '',
+    category_id: inventoryCategories[0]?.id || '',
     unit: 'kg',
     stock: '',
     minStock: '5',
@@ -75,7 +79,7 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
   // Filtrar solo insumos (no platos preparados)
   const ingredients = useMemo(() => {
     return inventory.filter(item => 
-      Object.values(INGREDIENT_CATEGORIES).includes(item.category) || 
+      inventoryCategories.some(cat => cat.id === parseInt(item.category_id)) || 
       item.isIngredient === true
     );
   }, [inventory]);
@@ -93,7 +97,7 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
     }
 
     if (categoryFilter) {
-      filtered = filtered.filter(ingredient => ingredient.category === categoryFilter);
+      filtered = filtered.filter(ingredient => ingredient.category_id === parseInt(categoryFilter));
     }
 
     if (stockFilter) {
@@ -142,14 +146,17 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
       stock: parseInt(newIngredient.stock) || 0,
       minStock: parseInt(newIngredient.minStock) || 5,
       isIngredient: true, // Marcar como insumo
-      expirationDate: newIngredient.expirationDate || null
+      expirationDate: newIngredient.expirationDate || null,
+      category_id: newIngredient.category_id
     };
+    // Remove any 'category' property that might exist
+    delete ingredientData.category;
     
     onAddIngredient?.(ingredientData);
     setNewIngredient({
       name: '',
       description: '',
-      category: '',
+      category_id: inventoryCategories[0]?.id || '',
       unit: 'kg',
       stock: '',
       minStock: '5',
@@ -165,8 +172,11 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
       const updates = {
         ...selectedIngredient,
         unitCost: parseFloat(selectedIngredient.unitCost) || 0,
-        minStock: parseInt(selectedIngredient.minStock) || 5
+        minStock: parseInt(selectedIngredient.minStock) || 5,
+        category_id: selectedIngredient.category_id
       };
+      // Remove any 'category' property that might exist
+      delete updates.category;
       onUpdateIngredient?.(selectedIngredient.id, updates);
       setShowEditModal(false);
       setSelectedIngredient(null);
@@ -228,8 +238,13 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
 
   const categoryOptions = [
     { value: '', label: 'Todas las categorías' },
-    ...Object.entries(INGREDIENT_CATEGORY_LABELS).map(([key, label]) => ({ value: key, label }))
+    ...inventoryCategories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
   ];
+
+  const categorySelectOptions = inventoryCategories.map(cat => ({ 
+    value: cat.id.toString(), 
+    label: cat.name 
+  }));
 
   return (
     <div className="p-6 space-y-6">
@@ -381,7 +396,7 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {INGREDIENT_CATEGORY_LABELS[ingredient.category] || ingredient.category}
+                        {inventoryCategories.find(cat => cat.id === parseInt(ingredient.category_id))?.name || 'Sin categoría'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{ingredient.stock}</div>
@@ -471,9 +486,9 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
               />
               <Select
                 label="Categoría"
-                value={newIngredient.category}
-                onChange={(e) => setNewIngredient({...newIngredient, category: e.target.value})}
-                options={categoryOptions.slice(1)}
+                value={newIngredient.category_id}
+                onChange={(e) => setNewIngredient({...newIngredient, category_id: e.target.value})}
+                options={categorySelectOptions}
                 required
               />
             </div>
@@ -544,7 +559,7 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
           <Button 
             variant="primary" 
             onClick={handleAddIngredient}
-            disabled={!newIngredient.name || !newIngredient.category}
+            disabled={!newIngredient.name || !newIngredient.category_id}
           >
             Agregar Insumo
           </Button>
@@ -570,9 +585,9 @@ const Inventory = ({ inventory = [], onUpdateStock, onAddIngredient, onUpdateIng
                 />
                 <Select
                   label="Categoría"
-                  value={selectedIngredient.category}
-                  onChange={(e) => setSelectedIngredient({...selectedIngredient, category: e.target.value})}
-                  options={categoryOptions.slice(1)}
+                  value={selectedIngredient.category_id}
+                  onChange={(e) => setSelectedIngredient({...selectedIngredient, category_id: e.target.value})}
+                  options={categorySelectOptions}
                   required
                 />
               </div>
