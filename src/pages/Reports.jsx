@@ -145,15 +145,22 @@ const Reports = ({ orders = [], inventory = [], currentUser }) => {
     const completedOrders = realTimeData.orders.filter(order => order.status === 'completado');
     
     completedOrders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString();
-      if (!dailyStats[date]) {
-        dailyStats[date] = { date, orders: 0, sales: 0 };
+      const orderDate = new Date(order.created_at);
+      const dateKey = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      if (!dailyStats[dateKey]) {
+        dailyStats[dateKey] = { 
+          date: orderDate, // Objeto Date real
+          dateKey, // Para ordenamiento
+          orders: 0, 
+          sales: 0 
+        };
       }
-      dailyStats[date].orders += 1;
-      dailyStats[date].sales += parseFloat(order.total);
+      dailyStats[dateKey].orders += 1;
+      dailyStats[dateKey].sales += parseFloat(order.total);
     });
 
-    return Object.values(dailyStats).sort((a, b) => new Date(a.date) - new Date(b.date));
+    return Object.values(dailyStats).sort((a, b) => new Date(a.dateKey) - new Date(b.dateKey));
   }, [realTimeData.orders]);
 
   // Productos más vendidos con datos reales
@@ -542,7 +549,7 @@ const Reports = ({ orders = [], inventory = [], currentUser }) => {
                   return (
                     <div key={index} className="flex items-center space-x-3">
                       <div className="w-20 text-sm font-medium text-gray-600">
-                        {new Date(dayStat.date).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })}
+                        {dayStat.date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })}
                       </div>
                       <div className="flex-1">
                         <div className="w-full bg-gray-200 rounded-full h-3">

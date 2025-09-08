@@ -1,11 +1,12 @@
 // Modal para procesar pagos al completar la orden - IMPORTS CORREGIDOS
 
 import React, { useState } from 'react';
-import { CreditCard, Smartphone, DollarSign, CheckCircle } from 'lucide-react';
+import { CreditCard, Smartphone, DollarSign, CheckCircle, FileText } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Modal, { ModalBody, ModalFooter } from '../ui/Modal';
 import { CURRENCY } from '../../utils/constants';
+import { InvoiceService } from '../../services/invoiceService';
 
 const PaymentModal = ({ 
   isOpen, 
@@ -17,6 +18,7 @@ const PaymentModal = ({
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [amountReceived, setAmountReceived] = useState('');
   const [notes, setNotes] = useState('');
+  const [generatePDF, setGeneratePDF] = useState(true); // Por defecto generar PDF
 
   const paymentMethods = [
     { value: 'efectivo', label: 'Efectivo', icon: DollarSign, color: 'text-green-600' },
@@ -49,12 +51,26 @@ const PaymentModal = ({
       orderId: order.id,
       paymentMethod,
       amountReceived: paymentMethod === 'efectivo' ? parseFloat(amountReceived) : parseFloat(order?.total || 0),
+      amountPaid: paymentMethod === 'efectivo' ? parseFloat(amountReceived) : parseFloat(order?.total || 0),
       change: calculateChange(),
-      notes: notes.trim() || null
+      notes: notes.trim() || null,
+      generatePDF
     };
 
     try {
       await onProcessPayment(paymentData);
+      
+      // Generar PDF si está habilitado
+      if (generatePDF) {
+        const result = InvoiceService.generateSalesNote(order, paymentData);
+        if (result.success) {
+          console.log('PDF generado exitosamente:', result.fileName);
+        } else {
+          console.error('Error generando PDF:', result.error);
+          alert('Pago procesado, pero hubo un error generando la nota de venta: ' + result.error);
+        }
+      }
+      
       resetForm();
       onClose();
     } catch (error) {
@@ -67,6 +83,7 @@ const PaymentModal = ({
     setPaymentMethod('efectivo');
     setAmountReceived('');
     setNotes('');
+    setGeneratePDF(true);
   };
 
   if (!order) return null;
@@ -185,6 +202,23 @@ const PaymentModal = ({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
+
+          {/* PDF Generation Option */}
+          <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg">
+            <input
+              type="checkbox"
+              id="generatePDF"
+              checked={generatePDF}
+              onChange={(e) => setGeneratePDF(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              <label htmlFor="generatePDF" className="text-sm font-medium text-blue-800 cursor-pointer">
+                Generar nota de venta en PDF
+              </label>
+            </div>
+          </div>
 
           {/* Items in Order */}
           <div>

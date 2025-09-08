@@ -10,6 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "bcryptjs": "^3.0.2",
     "init": "^0.1.2",
+    "jspdf": "^3.0.1",
     "lucide-react": "^0.535.0",
     "npx": "^10.2.2",
     "react": "^19.1.1",

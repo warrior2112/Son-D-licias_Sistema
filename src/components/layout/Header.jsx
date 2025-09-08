@@ -126,6 +126,7 @@ const Header = ({
     activeOrders: orders.filter(o => o.status === 'preparando' || o.status === 'listo').length
   };
 
+
   return (
     <>
       <header className="bg-gradient-to-r from-slate-800 via-gray-800 to-slate-700 text-white shadow-xl relative">

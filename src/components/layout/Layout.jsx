@@ -10,7 +10,11 @@ const Layout = ({
   setActiveModule, 
   currentUser, 
   onLogout,
-  onOpenUserManagement 
+  onOpenUserManagement,
+  orders = [],
+  tables = [],
+  inventory = [],
+  onRefreshData
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -47,6 +51,10 @@ const Layout = ({
         currentUser={currentUser} 
         onLogout={onLogout}
         onOpenUserManagement={onOpenUserManagement}
+        orders={orders}
+        tables={tables}
+        inventory={inventory}
+        onRefreshData={onRefreshData}
         onToggleSidebar={handleSidebarToggle}
         isMobile={isMobile}
         sidebarOpen={sidebarOpen}

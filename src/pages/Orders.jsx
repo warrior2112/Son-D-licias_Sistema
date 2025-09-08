@@ -145,7 +145,8 @@ const Orders = ({ orders = [], onUpdateOrderStatus, onDeleteOrder, onReloadOrder
         
         // Mostrar mensaje de éxito
         const tableMessage = order?.tableId ? ` Mesa ${order.tableId} liberada.` : '';
-        alert(`¡Pago procesado exitosamente!${tableMessage}\nMétodo: ${paymentData.paymentMethod.toUpperCase()}\nVuelto: ${CURRENCY} ${paymentData.change?.toFixed(2) || '0.00'}`);
+        const pdfMessage = paymentData.generatePDF !== false ? '\n📄 Nota de venta descargada automáticamente' : '';
+        alert(`¡Pago procesado exitosamente!${tableMessage}\nMétodo: ${paymentData.paymentMethod.toUpperCase()}\nVuelto: ${CURRENCY} ${paymentData.change?.toFixed(2) || '0.00'}${pdfMessage}`);
         
         // Cerrar modal
         setShowPaymentModal(false);
